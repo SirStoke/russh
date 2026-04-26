@@ -22,10 +22,10 @@ use bytes::Bytes;
 use cert::PublicKeyOrCertificate;
 use log::{debug, error, info, trace, warn};
 use msg;
+use russh_util::time::{Instant, sleep_until};
 use signature::Verifier;
 use ssh_encoding::{Decode, Encode, Reader};
 use ssh_key::{PublicKey, Signature};
-use tokio::time::Instant;
 
 use super::super::*;
 use super::*;
@@ -49,10 +49,9 @@ impl Session {
         handler: &mut H,
         buf: &[u8],
     ) -> Result<(), H::Error> {
-        let rejection_wait_until =
-            tokio::time::Instant::now() + self.common.config.auth_rejection_time;
+        let rejection_wait_until = Instant::now() + self.common.config.auth_rejection_time;
         let initial_none_rejection_wait_until = if self.common.auth_attempts == 0 {
-            tokio::time::Instant::now()
+            Instant::now()
                 + self
                     .common
                     .config
@@ -501,7 +500,7 @@ async fn reject_auth_request(
     auth_request.current = None;
     auth_request.rejection_count += 1;
     debug!("packet pushed");
-    tokio::time::sleep_until(until).await;
+    sleep_until(until).await;
     Ok(())
 }
 

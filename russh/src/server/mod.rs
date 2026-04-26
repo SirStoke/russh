@@ -41,7 +41,7 @@ use futures::future::Future;
 use log::{debug, error, info, warn};
 use msg::{is_kex_msg, validate_client_msg_strict_kex};
 use russh_util::runtime::JoinHandle;
-use russh_util::time::Instant;
+use russh_util::time::{Instant, timeout};
 use ssh_key::{Certificate, PrivateKey};
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 #[cfg(not(target_arch = "wasm32"))]
@@ -1044,7 +1044,7 @@ async fn read_ssh_id<R: AsyncRead + Unpin>(
     read: &mut SshRead<R>,
 ) -> Result<CommonSession<Arc<Config>>, Error> {
     let sshid = if let Some(t) = config.inactivity_timeout {
-        tokio::time::timeout(t, read.read_ssh_id()).await??
+        timeout(t, read.read_ssh_id()).await??
     } else {
         read.read_ssh_id().await?
     };

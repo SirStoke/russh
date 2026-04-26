@@ -6,6 +6,7 @@ use channels::WindowSizeRef;
 use kex::ServerKex;
 use log::debug;
 use negotiation::parse_kex_algo_list;
+use russh_util::time::{Instant, sleep};
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
@@ -497,22 +498,34 @@ impl Session {
         let mut opening_cipher = Box::new(clear::Key) as Box<dyn OpeningKey + Send>;
         std::mem::swap(&mut opening_cipher, &mut self.common.remote_to_local);
 
-        let keepalive_timer =
-            future_or_pending(self.common.config.keepalive_interval, tokio::time::sleep);
-        pin!(keepalive_timer);
-
-        let inactivity_timer =
-            future_or_pending(self.common.config.inactivity_timeout, tokio::time::sleep);
-        pin!(inactivity_timer);
-
         let reading = start_reading(stream_read, buffer, opening_cipher);
         pin!(reading);
         let mut is_reading = None;
+        let mut keepalive_deadline = self
+            .common
+            .config
+            .keepalive_interval
+            .map(|duration| Instant::now() + duration);
+        let mut inactivity_deadline = self
+            .common
+            .config
+            .inactivity_timeout
+            .map(|duration| Instant::now() + duration);
 
         #[allow(clippy::panic)] // false positive in macro
         while !self.common.disconnected {
             self.common.received_data = false;
             let mut sent_keepalive = false;
+            let keepalive_timer = future_or_pending(
+                keepalive_deadline.map(|deadline| deadline.saturating_duration_since(Instant::now())),
+                sleep,
+            );
+            pin!(keepalive_timer);
+            let inactivity_timer = future_or_pending(
+                inactivity_deadline.map(|deadline| deadline.saturating_duration_since(Instant::now())),
+                sleep,
+            );
+            pin!(inactivity_timer);
             tokio::select! {
                 r = &mut reading => {
                     let (stream_read, mut buffer, mut opening_cipher) = match r {
@@ -660,20 +673,18 @@ impl Session {
                 self.common.alive_timeouts = 0;
             }
             if self.common.received_data || sent_keepalive {
-                if let (futures::future::Either::Right(ref mut sleep), Some(d)) = (
-                    keepalive_timer.as_mut().as_pin_mut(),
-                    self.common.config.keepalive_interval,
-                ) {
-                    sleep.as_mut().reset(tokio::time::Instant::now() + d);
-                }
+                keepalive_deadline = self
+                    .common
+                    .config
+                    .keepalive_interval
+                    .map(|duration| Instant::now() + duration);
             }
             if !sent_keepalive {
-                if let (futures::future::Either::Right(ref mut sleep), Some(d)) = (
-                    inactivity_timer.as_mut().as_pin_mut(),
-                    self.common.config.inactivity_timeout,
-                ) {
-                    sleep.as_mut().reset(tokio::time::Instant::now() + d);
-                }
+                inactivity_deadline = self
+                    .common
+                    .config
+                    .inactivity_timeout
+                    .map(|duration| Instant::now() + duration);
             }
         }
         debug!("disconnected");

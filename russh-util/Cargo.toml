@@ -10,12 +10,13 @@ license = "Apache-2.0"
 repository = "https://github.com/warp-tech/russh"
 
 [dependencies]
-tokio = { workspace = true, features = ["sync", "macros"] }
+tokio = { workspace = true, features = ["sync", "macros", "time"] }
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-chrono = "0.4.38"
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+js-sys = "0.3"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.43"
+web-time = "1"
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
 tokio = { workspace = true, features = ["io-util", "rt-multi-thread", "rt"] }

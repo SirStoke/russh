@@ -214,7 +214,7 @@ pub enum Error {
     Join(#[from] russh_util::runtime::JoinError),
 
     #[error(transparent)]
-    Elapsed(#[from] tokio::time::error::Elapsed),
+    Elapsed(#[from] russh_util::time::Elapsed),
 
     #[error("Violation detected during strict key exchange, message {message_type} at seq no {sequence_number}")]
     StrictKeyExchangeViolation {
