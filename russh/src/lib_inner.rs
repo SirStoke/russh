@@ -64,7 +64,6 @@ mod parsing;
 mod session;
 
 /// Server side of this library.
-#[cfg(not(target_arch = "wasm32"))]
 pub mod server;
 
 /// Client side of this library.

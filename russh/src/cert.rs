@@ -1,5 +1,4 @@
 use ssh_key::{Certificate, HashAlg, PublicKey};
-#[cfg(not(target_arch = "wasm32"))]
 use {
     crate::helpers::AlgorithmExt, ssh_encoding::Decode, ssh_key::Algorithm,
     ssh_key::public::KeyData,
@@ -27,7 +26,6 @@ impl From<&PrivateKeyWithHashAlg> for PublicKeyOrCertificate {
 }
 
 impl PublicKeyOrCertificate {
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn decode(pubkey_algo: &str, buf: &[u8]) -> Result<Self, ssh_key::Error> {
         let mut reader = buf;
         match Algorithm::new_certificate_ext(pubkey_algo) {

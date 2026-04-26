@@ -25,16 +25,9 @@ use crate::kex::{
     EXTENSION_OPENSSH_STRICT_KEX_AS_CLIENT, EXTENSION_OPENSSH_STRICT_KEX_AS_SERVER, KexCause,
 };
 use crate::keys::key::safe_rng;
-#[cfg(not(target_arch = "wasm32"))]
 use crate::server::Config;
 use crate::sshbuffer::PacketWriter;
 use crate::{AlgorithmKind, Error, cipher, compression, kex, mac, msg};
-
-#[cfg(target_arch = "wasm32")]
-/// WASM-only stub
-pub struct Config {
-    keys: Vec<PrivateKey>,
-}
 
 #[derive(Debug, Clone)]
 pub struct Names {

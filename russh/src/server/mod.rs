@@ -44,6 +44,7 @@ use russh_util::runtime::JoinHandle;
 use russh_util::time::Instant;
 use ssh_key::{Certificate, PrivateKey};
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
+#[cfg(not(target_arch = "wasm32"))]
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::pin;
 use tokio::sync::{broadcast, mpsc};
@@ -841,6 +842,7 @@ pub trait Server {
 
     /// Run a server on a specified `tokio::net::TcpListener`. Useful when dropping
     /// privileges immediately after socket binding, for example.
+    #[cfg(not(target_arch = "wasm32"))]
     fn run_on_socket(
         &mut self,
         config: Arc<Config>,
@@ -938,6 +940,7 @@ pub trait Server {
 
     /// Run a server.
     /// This is a convenience function; consider using `run_on_socket` for more control.
+    #[cfg(not(target_arch = "wasm32"))]
     fn run_on_address<A: ToSocketAddrs + Send>(
         &mut self,
         config: Arc<Config>,
